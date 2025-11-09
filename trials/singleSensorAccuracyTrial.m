@@ -4,6 +4,7 @@
 
 %% Admin
 clc; close all;
+pkg load statistics; % For Octave
 setPath;
 %% Open existing file
 filename = 'blimp.mat';
