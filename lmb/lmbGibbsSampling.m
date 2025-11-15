@@ -1,6 +1,6 @@
-function [r, W, V] = lmbGibbsSampling(associationMatrices, numberOfSamples)
+function [rng, r, W, V] = lmbGibbsSampling(rng, associationMatrices, numberOfSamples)
 % LMBGIBBSSAMPLING -- Determine posterior existence probabilities and association weights using a Gibbs sampler
-%  [r, W, V] = lmbGibbsSampling(associationMatrices, numberOfSamples)
+%  [rng, r, W, V] = lmbGibbsSampling(rng, associationMatrices, numberOfSamples)
 %
 %   This function determines each object's posterior existence and marginal
 %   association probabilities using Gibbs sampling. This function is a bit
@@ -11,12 +11,14 @@ function [r, W, V] = lmbGibbsSampling(associationMatrices, numberOfSamples)
 %       loopyBeliefPropagation, lmbGibbsFrequencySampling
 %
 %   Inputs
-%       associationMatrices - struct. A struct whose fields are the arrays required 
+%       rng - SimpleRng object. Random number generator.
+%       associationMatrices - struct. A struct whose fields are the arrays required
 %           by the various data association algorithms.
 %       numberOfSamples - double. The number of Gibbs samples we want to
 %           generate.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       r - array. Each object's posterior existence probability.
 %       W - array. An array of marginal association probabilities, where
 %           each row is an object's marginal association probabilities.
@@ -31,7 +33,7 @@ V = zeros(numberOfSamples, n);
 %% Gibbs sampling
 for i = 1:numberOfSamples
     %% Generate a new Gibbs sample
-    [v, w] = generateGibbsSample(associationMatrices.P, v, w);
+    [rng, v, w] = generateGibbsSample(rng, associationMatrices.P, v, w);
     %% Store Gibbs sample
     V(i, :) = v;
 end
