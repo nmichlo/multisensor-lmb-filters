@@ -1,4 +1,4 @@
-function [V, W] = generateMultisensorAssociationEvent(L, V, W)
+function [rng, V, W] = generateMultisensorAssociationEvent(rng, L, V, W)
 %% Sizes
 d = size(L);
 m = d(1:end-1) - 1;
@@ -24,7 +24,8 @@ for s = 1:S
                 % Sample probability
                 P = 1 / (exp(L(r) - L(q)) + 1 ); % L is the loglikelihood of the event
                 %% Sample
-                if (rand() < P)
+                [rng, u] = rng.rand();
+                if (u < P)
                     %% Object i generated measurement z_j^s
                     V(i, s) = j;
                     W(j, s) = i;

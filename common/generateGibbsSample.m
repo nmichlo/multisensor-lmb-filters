@@ -1,6 +1,6 @@
-function [v, w] = generateGibbsSample(P, v, w)
+function [rng, v, w] = generateGibbsSample(rng, P, v, w)
 % GENERATEGIBBSSAMPLE -- Generate a new association event using Gibbs sampling
-%   [v, w] = generateGibbsSample(P, v, w)
+%   [rng, v, w] = generateGibbsSample(rng, P, v, w)
 %
 %   This function generates a new association event using Gibbs sampling, 
 %   and the previous state of the association vectors v and w.
@@ -9,12 +9,14 @@ function [v, w] = generateGibbsSample(P, v, w)
 %            lmbmGibbsSampling
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       P - array. An array of sampling probabilites. See
 %           generateGibsAssociationMatrices.
 %       v - array. The object-to-measurement association vector.
 %       w - array. The measurement-to-object association vector.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       v - array. The updated object-to-measurement association vector.
 %       w - array. The updated measurement-to-object association vector.
 
@@ -27,7 +29,8 @@ for i = 1:n
     for j = k:m
         % Sample from a_i^j if column j is otherwise unnoccupied
         if ((w(j) == 0) || (w(j) == i))
-            if (rand() < P(i, j))
+            [rng, u] = rng.rand();
+            if (u < P(i, j))
                 % Object i generated measurement z_j, we onto object i+1
                 v(i) = j;
                 w(j) = i;

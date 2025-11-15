@@ -1,12 +1,13 @@
-function model = generateMultisensorModel(numberOfSensors, clutterRates, detectionProbabilities, q, lmbParallelUpdateMode, dataAssociationMethod, varargin)
+function [rng, model] = generateMultisensorModel(rng, numberOfSensors, clutterRates, detectionProbabilities, q, lmbParallelUpdateMode, dataAssociationMethod, varargin)
 % GENERATEMULTISENSORMODEL -- Generates a structure containing all simulation info.
-%   model =  generateMultisensorModel(numberOfSensors, clutterRates, detectionProbabilities, q, lmbParallelUpdateMode, dataAssociationMethod, varargin)
+%   [rng, model] = generateMultisensorModel(rng, numberOfSensors, clutterRates, detectionProbabilities, q, lmbParallelUpdateMode, dataAssociationMethod, varargin)
 %
 %   Declares all multi-sensor simulation information, except the ground truth.
 %
 %   See also generateGroundTruth.
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       numberOfSensors - integer. The number of sensors for the
 %           simulation.
 %       clutterRates - (1, s) array. The number of expected clutter per
@@ -15,9 +16,9 @@ function model = generateMultisensorModel(numberOfSensors, clutterRates, detecti
 %       detectionProbabilities - (1, s) array. Each sensor's detection
 %           probability.
 %       lmbParallelUpdateMode - char array. Type of measurement update for
-%           the multi-sensor LMB filter: 'PU', 'AA', 'GA'. 'PU' is default. 
+%           the multi-sensor LMB filter: 'PU', 'AA', 'GA'. 'PU' is default.
 %       q - (1, s) cell array. The standard deviation of each sensor's noise.
-%           It is assumed that a sensor's noise covariance is given by 
+%           It is assumed that a sensor's noise covariance is given by
 %           Q{i} = (q(i)^2) * eye(2, 2)
 %       dataAssociationMethod - string. Type of data association method for the filters:
 %           'LBP', 'Gibbs', 'Murty', 'LBPFixed'. LBP does not apply to LMBM filter.
@@ -27,19 +28,20 @@ function model = generateMultisensorModel(numberOfSensors, clutterRates, detecti
 %       scenarioType - char array. Optional input: Type of simulated scenario.
 %           'Fixed' - Four fixed birth locations.
 %           'Random' - Randomly generated birth locations.
-%       numberOfBirthLocations - integer. Optional input: Number of birth 
-%           locations for the 'Random' scenario. 
+%       numberOfBirthLocations - integer. Optional input: Number of birth
+%           locations for the 'Random' scenario.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       model - struct. A struct with the fields declared in this function.
 
 %% Very dodgy input checking
-if (nargin > 6)
+if (nargin > 7)
     % Get input
     if (ischar(varargin{1}))
         model.scenarioType = varargin{1};
         if (strcmp(model.scenarioType, 'Random'))
-            if (nargin > 7)
+            if (nargin > 8)
                 numberOfBirthLocations = varargin{2};
             else
                 error('You must specify the number of birth locations');
@@ -100,7 +102,8 @@ else
     % Random birth locations
     model.numberOfBirthLocations = numberOfBirthLocations;
     birthLocations = zeros(model.xDimension, numberOfBirthLocations);
-    birthLocations(1:2, :) = 0.5 * model.observationSpaceLimits(:, 1) + model.observationSpaceLimits(:, 2) .* rand(model.zDimension, numberOfBirthLocations);
+    [rng, randMatrix] = rng.rand(model.zDimension, numberOfBirthLocations);
+    birthLocations(1:2, :) = 0.5 * model.observationSpaceLimits(:, 1) + model.observationSpaceLimits(:, 2) .* randMatrix;
 end
 model.birthLocationLabels = 1:model.numberOfBirthLocations;
 model.rB = 0.03 * ones(model.numberOfBirthLocations, 1);

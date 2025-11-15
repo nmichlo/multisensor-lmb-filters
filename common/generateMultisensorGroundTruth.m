@@ -1,17 +1,19 @@
-function [groundTruth, measurements, groundTruthRfs] = generateMultisensorGroundTruth(model, varargin)
+function [rng, groundTruth, measurements, groundTruthRfs] = generateMultisensorGroundTruth(rng, model, varargin)
 % GENERATEMULTISENSORGROUNDTRUTH -- Generates the measurements and groundtruth for a simple hard-coded example.
-%   [groundTruth, measurements, groundTruthRfs] = generateGroundTruth(model)
+%   [rng, groundTruth, measurements, groundTruthRfs] = generateGroundTruth(rng, model)
 %
 %   Generates the objects' groundtruths for a simple scenario, and also their measurements.
 %
 %   See also generateMultisensorModel, plotMultisensorResults
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       model - struct. A struct with the fields declared in generateModel.
 %       numberOfObjects - integer. The number of objects to be simulated
 %           for a 'Random' scenario.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       groundTruth - cell array. An array of each object's groundtruth
 %           trajectory.
 %       measurements - cell array. An array containing the measurements for
@@ -54,7 +56,8 @@ elseif (strcmp(model.scenarioType, 'Random'))
     % Object birth states
     birthLocationIndex = 1:model.numberOfBirthLocations; %randi([1 model.numberOfBirthLocations],1 , numberOfObjects);
     priorLocations = [model.muB{birthLocationIndex}];
-    priorLocations(3:4, :) = 3 * randn(numberOfObjects, 2)';
+    [rng, randnMatrix] = rng.randn(numberOfObjects, 2);
+    priorLocations(3:4, :) = 3 * randnMatrix';
 end
 %% Allocate output
 measurements = repmat({}, model.numberOfSensors, simulationLength);
@@ -66,10 +69,11 @@ groundTruthRfs.cardinality = zeros(1, simulationLength);
 %% Add in clutter measurements
 for i = 1:simulationLength
     for s = 1:model.numberOfSensors
-        numberOfClutterMeasurements = poissrnd(model.clutterRate(s));
+        [rng, numberOfClutterMeasurements] = rng.poissrnd(model.clutterRate(s));
         measurements{s, i} = cell(numberOfClutterMeasurements, 1);
         for j = 1:numberOfClutterMeasurements
-            measurements{s, i}{j} = model.observationSpaceLimits(:, 1) + 2 * model.observationSpaceLimits(:, 2) .* rand(model.zDimension, 1);
+            [rng, randVec] = rng.rand(model.zDimension, 1);
+            measurements{s, i}{j} = model.observationSpaceLimits(:, 1) + 2 * model.observationSpaceLimits(:, 2) .* randVec;
         end
     end
 end
@@ -95,7 +99,8 @@ for i = 1:numberOfObjects
             Sigma = model.A * Sigma * model.A' + model.R;
         end
         % Preallocate parameters
-        generatedMeasurement = rand(model.numberOfSensors, 1) < model.detectionProbability;
+        [rng, randVec] = rng.rand(model.numberOfSensors, 1);
+        generatedMeasurement = randVec < model.detectionProbability;
         numberOfAssignments = sum(generatedMeasurement);
         if (numberOfAssignments)
             counter = 0;
@@ -105,7 +110,8 @@ for i = 1:numberOfObjects
             for s = 1:model.numberOfSensors
                 % Determine if object missed detection
                 if (generatedMeasurement(s))
-                    y = model.C{s} * x + chol(model.Q{s}, 'lower') * randn(1, model.zDimension)';
+                    [rng, noise] = rng.randn(1, model.zDimension);
+                    y = model.C{s} * x + chol(model.Q{s}, 'lower') * noise';
                     measurements{s, t}{end+1} = y;
                     % Stack measurements and matrices
                     start = model.zDimension * counter + 1;

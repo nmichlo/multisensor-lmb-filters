@@ -1,17 +1,19 @@
-function [groundTruth, measurements, groundTruthRfs] = generateGroundTruth(model, varargin)
+function [rng, groundTruth, measurements, groundTruthRfs] = generateGroundTruth(rng, model, varargin)
 % GENERATEGROUNDTRUTH -- Generates the measurements and groundtruth for a simple hard-coded example.
-%   [groundTruth, measurements, groundTruthRfs] = generateGroundTruth(model)
+%   [rng, groundTruth, measurements, groundTruthRfs] = generateGroundTruth(rng, model)
 %
 %   Generates the objects' groundtruths for a simple scenario, and also their measurements.
 %
 %   See also generateModel, plotResults
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       model - struct. A struct with the fields declared in generateModel.
 %       numberOfObjects - integer. The number of objects to be simulated
 %           for a 'Random' scenario.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       groundTruth - cell array. An array of each object's groundtruth
 %           trajectory.
 %       measurements - cell array. An array containing the measurements for
@@ -54,7 +56,8 @@ elseif (strcmp(model.scenarioType, 'Random'))
     % Object birth states
     birthLocationIndex = 1:model.numberOfBirthLocations; %randi([1 model.numberOfBirthLocations],1 , numberOfObjects);
     priorLocations = [model.muB{birthLocationIndex}];
-    priorLocations(3:4, :) = 3 * randn(numberOfObjects, 2)';
+    [rng, randnMatrix] = rng.randn(numberOfObjects, 2);
+    priorLocations(3:4, :) = 3 * randnMatrix';
 end
 %% Allocate output
 measurements = repmat({}, simulationLength, 1);
@@ -65,10 +68,11 @@ groundTruthRfs.Sigma = groundTruthRfs.x;
 groundTruthRfs.cardinality = zeros(1, simulationLength);
 %% Add in clutter measurements
 for i = 1:simulationLength
-    numberOfClutterMeasurements = poissrnd(model.clutterRate);
+    [rng, numberOfClutterMeasurements] = rng.poissrnd(model.clutterRate);
     measurements{i} = cell(numberOfClutterMeasurements, 1);
     for j = 1:numberOfClutterMeasurements
-        measurements{i}{j} = model.observationSpaceLimits(:, 1) + 2 * model.observationSpaceLimits(:, 2) .* rand(model.zDimension, 1);
+        [rng, randVec] = rng.rand(model.zDimension, 1);
+        measurements{i}{j} = model.observationSpaceLimits(:, 1) + 2 * model.observationSpaceLimits(:, 2) .* randVec;
     end
 end
 %% Add in each object's measurements
@@ -94,8 +98,10 @@ for i = 1:numberOfObjects
             Sigma = model.A * Sigma * model.A' + model.R;
         end
         % Determine if object missed detection
-        if (rand < model.detectionProbability)
-            z = model.C * x + QChol * randn(1, model.zDimension)';
+        [rng, u] = rng.rand();
+        if (u < model.detectionProbability)
+            [rng, noise] = rng.randn(1, model.zDimension);
+            z = model.C * x + QChol * noise';
             measurements{t}{end+1} = z;
             % Kalman filter measurement update
             K = Sigma * model.C'/(model.C * Sigma * model.C' + model.Q);
