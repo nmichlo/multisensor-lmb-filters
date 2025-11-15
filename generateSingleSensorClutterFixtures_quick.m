@@ -10,7 +10,8 @@ seed = 42;
 numberOfClutterReturns = [10 60];  % Only 2 rates for quick validation
 numberOfExperimentsPerTrial = numel(numberOfClutterReturns);
 detectionProbability = 0.95;
-simulationLength = 10;  % 10 timesteps (from generateGroundTruthShort)
+simulationLengthGibbs = 3;   % 3 timesteps for Gibbs variants (fast)
+simulationLengthOther = 100;  % 100 timesteps for other variants
 
 % Data association methods
 lmbDataAssociationMethods = {'LBP', 'Gibbs', 'Murty'};
@@ -23,11 +24,12 @@ results = struct();
 results.seed = seed;
 results.clutterRates = numberOfClutterReturns;
 results.detectionProbability = detectionProbability;
-results.simulationLength = simulationLength;
+results.simulationLengthGibbs = simulationLengthGibbs;
+results.simulationLengthOther = simulationLengthOther;
 results.filterVariants = {};
 
 fprintf('Generating single-sensor clutter sensitivity fixtures (seed=%d, quick mode)\n', seed);
-fprintf('Simulation length: %d timesteps\n', simulationLength);
+fprintf('Simulation length: Gibbs=%d, Others=%d timesteps\n', simulationLengthGibbs, simulationLengthOther);
 fprintf('Clutter rates: %s\n\n', mat2str(numberOfClutterReturns));
 
 % Process each clutter rate
@@ -39,14 +41,29 @@ for i = 1:numberOfExperimentsPerTrial
     rng = SimpleRng(0);
     [rng, model] = generateModel(rng, clutterRate, detectionProbability, 'LBP');
 
-    % Generate ground truth and measurements with trial-specific seed (10 timesteps)
+    % Generate FULL ground truth and measurements (100 timesteps)
     rng = SimpleRng(seed);
-    [rng, groundTruth, measurements, groundTruthRfs] = generateGroundTruthShort(rng, model);
+    [rng, groundTruthFull, measurementsFull, groundTruthRfsFull] = generateGroundTruth(rng, model);
 
     % LMB filters
     for j = 1:numberOfLmbAssociationMethods
         methodName = lmbDataAssociationMethods{j};
         fprintf('  LMB-%s... ', methodName);
+
+        % Determine simulation length for this method
+        if strcmp(methodName, 'Gibbs')
+            simLen = simulationLengthGibbs;
+            measurements = measurementsFull(1:simLen);
+            groundTruthRfs = struct();
+            groundTruthRfs.x = groundTruthRfsFull.x(1:simLen);
+            groundTruthRfs.mu = groundTruthRfsFull.mu(1:simLen);
+            groundTruthRfs.Sigma = groundTruthRfsFull.Sigma(1:simLen);
+            groundTruthRfs.cardinality = groundTruthRfsFull.cardinality(1:simLen);
+        else
+            simLen = simulationLengthOther;
+            measurements = measurementsFull;
+            groundTruthRfs = groundTruthRfsFull;
+        end
 
         % Set up model for this method
         model.dataAssociationMethod = methodName;
@@ -87,6 +104,21 @@ for i = 1:numberOfExperimentsPerTrial
     for j = 1:numberOfLmbmAssociationMethods
         methodName = lmbmDataAssociationMethods{j};
         fprintf('  LMBM-%s... ', methodName);
+
+        % Determine simulation length for this method
+        if strcmp(methodName, 'Gibbs')
+            simLen = simulationLengthGibbs;
+            measurements = measurementsFull(1:simLen);
+            groundTruthRfs = struct();
+            groundTruthRfs.x = groundTruthRfsFull.x(1:simLen);
+            groundTruthRfs.mu = groundTruthRfsFull.mu(1:simLen);
+            groundTruthRfs.Sigma = groundTruthRfsFull.Sigma(1:simLen);
+            groundTruthRfs.cardinality = groundTruthRfsFull.cardinality(1:simLen);
+        else
+            simLen = simulationLengthOther;
+            measurements = measurementsFull;
+            groundTruthRfs = groundTruthRfsFull;
+        end
 
         % Set up model for this method
         model.dataAssociationMethod = methodName;
