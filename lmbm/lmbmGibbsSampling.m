@@ -1,21 +1,23 @@
-function V = lmbmGibbsSampling(P, C, numberOfSamples)
+function [rng, V] = lmbmGibbsSampling(rng, P, C, numberOfSamples)
 % LMBMGIBBSSAMPLING -- Generate association events using a Gibbs sampler.
-%  [r, W] = lmbmGibbsSampling(gibbsParameters, numberOfSamples)
+%  [rng, V] = lmbmGibbsSampling(rng, P, C, numberOfSamples)
 %
 %   This function generates a set of posterior hypotheses for a given prior
-%   hypothesis' input matrix using Gibbs sampling. 
+%   hypothesis' input matrix using Gibbs sampling.
 %
 %   See also runLmbmFilter, generateLmbmAssociationMatrices, lmbGibbsSampling
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       P - (n, m) array. An array of sampling probabilites for the Gibbs
 %           sampler. See also generateLbmmGibbsMatrices.
-%       C - (n, m) array. The cost matrix declared for Murty's algorithm in 
+%       C - (n, m) array. The cost matrix declared for Murty's algorithm in
 %           generateLmbAssociationMatrices.
 %       numberOfSamples - double. The number of Gibbs samples we want to
 %           generate.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       V - array. An array of distinct association events, where each row of the
 %           array is an association event.
 
@@ -27,7 +29,7 @@ V = zeros(numberOfSamples, n);
 %% Gibbs sampling
 for i = 1:numberOfSamples
     %% Generate a new Gibbs sample
-    [v, w] = generateGibbsSample(P, v, w);
+    [rng, v, w] = generateGibbsSample(rng, P, v, w);
     %% Store Gibbs sample
     V(i, :) = v;
 end

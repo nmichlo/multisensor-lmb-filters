@@ -1,19 +1,21 @@
-function stateEstimates = runLmbFilter(model, measurements)
+function [rng, stateEstimates] = runLmbFilter(rng, model, measurements)
 % RUNLMBFILTER -- Run the LMB filter for a given simulated scenario.
-%   stateEstimates = runLmbFilter(model, measurements)
+%   [rng, stateEstimates] = runLmbFilter(rng, model, measurements)
 %
 %   Determine the objects' state estimates using the LMB filter.
 %
 %   See also generateModel, generateGroundTruth, lmbPredictionStep,
-%   generateLmbAssociationMatrices, loopyBeliefPropagation, lmbGibbsSampling, 
+%   generateLmbAssociationMatrices, loopyBeliefPropagation, lmbGibbsSampling,
 %   lmbMurtysAlgorithm, computePosteriorLmbSpatialDistributions, lmbMapCardinalityEstimate
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator (for Gibbs sampling).
 %       model - struct. A struct with the fields declared in generateModel.
 %       measurements - cell array. An array containing the measurements for
 %           each time-step of the simulation. See also generateModel.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       stateEstimates - struct. A struct containing the LMB filter's
 %           approximate MAP estimate for each time-step of the simulation, as
 %           well as the objects' trajectories.
@@ -28,7 +30,15 @@ stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
 %% Run the LMB filter
+showProgress = (simulationLength >= 1);  % Only show progress for long simulations
+fprintf(' (%d)', simulationLength);
+fflush(stdout);
+
 for t = 1:simulationLength
+    % Show progress every 1 timesteps (LMBM is slow, so show more frequently)
+    fprintf(' %d', t);
+    fflush(stdout);
+
     %% Prediction
     objects = lmbPredictionStep(objects, model, t);
     %% Measurement update
@@ -42,7 +52,7 @@ for t = 1:simulationLength
             [r, W] = fixedLoopyBeliefPropagation(associationMatrices, model.maximumNumberOfLbpIterations);
         elseif(strcmp(model.dataAssociationMethod, 'Gibbs'))
             % Data association by way of Gibbs sampling
-            [r, W] = lmbGibbsSampling(associationMatrices, model.numberOfSamples);
+            [rng, r, W] = lmbGibbsSampling(rng, associationMatrices, model.numberOfSamples);
         else
             % Data association by way of Murty's algorithm
             [r, W] = lmbMurtysAlgorithm(associationMatrices, model.numberOfAssignments);

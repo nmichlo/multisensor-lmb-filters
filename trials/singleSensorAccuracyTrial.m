@@ -15,7 +15,9 @@ if (fileExists)
 else
     % Number of trials
     numberOfTrials = 100;
-    model = generateModel(2, 0.95, 'LBP'); % rBLbmbm = 0.06
+    % Generate model with fixed seed (same model for all trials)
+    modelRng = SimpleRng(0);
+    [modelRng, model] = generateModel(modelRng, 2, 0.95, 'LBP'); % rBLbmbm = 0.06
     simulationLength = 100;
     trialIndex = 0;
     % Data assocation methods
@@ -42,8 +44,9 @@ end
 startingPoint = trialIndex;
 for t = (startingPoint+1):numberOfTrials
     fprintf('Trial %d \n', t);
-    %% Generate new measurements
-    [groundTruth, measurements, groundTruthRfs] = generateGroundTruth(model);
+    %% Generate new measurements with trial-specific RNG seed
+    trialRng = SimpleRng(t);
+    [trialRng, groundTruth, measurements, groundTruthRfs] = generateGroundTruth(trialRng, model);
     %% LMB filters
     for i = 1:numberOfLmbAssociationMethods
         fprintf(['LMB: ' lmbDataAssociationMethods{i} '\n']);

@@ -1,17 +1,19 @@
-function stateEstimates = runLmbmFilter(model, measurements)
+function [rng, stateEstimates] = runLmbmFilter(rng, model, measurements)
 % RUNLMBMFILTER -- Run the LMBM filter for a given simulated scenario.
-%   stateEstimates = runLmbmFilter(model, measurements)
+%   [rng, stateEstimates] = runLmbmFilter(rng, model, measurements)
 %
 %   Determine the objects' state estimates using the LMBM filter.
 %
 %   See also generateModel, generateGroundTruth
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator (for Gibbs sampling).
 %       model - struct. A struct with the fields declared in generateModel.
 %       measurements - cell array. An array containing the measurements for
 %           each time-step of the simulation. See also generateGroundTruth.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       stateEstimates - struct. A struct containing the LMB filter's
 %           approximate MAP estimate for each time-step of the simulation, as
 %           well as the objects' trajectories.
@@ -27,7 +29,15 @@ stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
 %% Run the LMBM filter
+showProgress = (simulationLength >= 1);  % Only show progress for long simulations
+fprintf(' (%d)', simulationLength);
+fflush(stdout);
+
 for t = 1:simulationLength
+    % Show progress every 1 timesteps (LMBM is slow, so show more frequently)
+    fprintf(' %d', t);
+    fflush(stdout);
+
     %% Add in new trajectory structs
     [model.birthTrajectory.birthTime] = deal(t);
     objects(end+1:end+model.numberOfBirthLocations) = model.birthTrajectory; 
@@ -45,7 +55,7 @@ for t = 1:simulationLength
             if(strcmp(model.dataAssociationMethod, 'Murty'))
                 V = murtysAlgorithmWrapper(associationMatrices.C, model.numberOfAssignments);
             else
-                V = lmbmGibbsSampling(associationMatrices.P, associationMatrices.C, model.numberOfSamples);
+                [rng, V] = lmbmGibbsSampling(rng, associationMatrices.P, associationMatrices.C, model.numberOfSamples);
             end
             % Determine each posterior hypothesis' parameters
             newHypotheses = determinePosteriorHypothesisParameters(V, associationMatrices.L, posteriorParameters, priorHypothesis);
