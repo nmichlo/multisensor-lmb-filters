@@ -78,7 +78,7 @@ for i = 1:numberOfLmbmAssociationMethods
     groundTruthRfsShort = struct();
     groundTruthRfsShort.x = groundTruthRfs.x(1:lmbmSimulationLength);
     groundTruthRfsShort.mu = groundTruthRfs.mu(1:lmbmSimulationLength);
-    groundTruthRfsShort.sigma = groundTruthRfs.sigma(1:lmbmSimulationLength);
+    groundTruthRfsShort.Sigma = groundTruthRfs.Sigma(1:lmbmSimulationLength);
 
     [eOspaLmbm{i}, hOspaLmbm{i}, lmbmCardinality{i}] = computeSimulationOspa(model, groundTruthRfsShort, stateEstimates);
     fprintf(' done (%.1fs)\n', toc(filterStartTime));
