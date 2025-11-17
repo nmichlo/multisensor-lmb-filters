@@ -17,15 +17,15 @@ for s = 1:S
                 %% Determine sample probability
                 % Generated
                 u(s) = j + 1;
-                q =  determineLinearIndex(u, d);
+                q =  round(determineLinearIndex(u, d));
                 % Missed
                 u(s) = 1;
-                r =  determineLinearIndex(u, d);
+                r =  round(determineLinearIndex(u, d));
                 % Sample probability
                 P = 1 / (exp(L(r) - L(q)) + 1 ); % L is the loglikelihood of the event
                 %% Sample
-                [rng, u] = rng.rand();
-                if (u < P)
+                [rng, sample] = rng.rand();
+                if (sample < P)
                     %% Object i generated measurement z_j^s
                     V(i, s) = j;
                     W(j, s) = i;
@@ -48,4 +48,5 @@ for i = 2:length(u)
     Pi = Pi * d(i-1);
     ell  = ell  + Pi * (u(i) - 1);
 end
+ell = round(ell);  % Ensure integer index
 end

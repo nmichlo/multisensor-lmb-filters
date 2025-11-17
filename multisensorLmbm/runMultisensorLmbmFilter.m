@@ -1,20 +1,22 @@
-function stateEstimates = runMultisensorLmbmFilter(model, measurements)
+function [rng, stateEstimates] = runMultisensorLmbmFilter(rng, model, measurements)
 % RUNMULTISENSORLMBMFILTER -- Run the multi-sensor LMBM filter for a given simulated scenario.
-%   stateEstimates = runMultisensorLmbmFilter(model, measurements)
+%   [rng, stateEstimates] = runMultisensorLmbmFilter(rng, model, measurements)
 %
 %   Determine the objects' state estimates using the multi-sensor LMBM filter.
 %   WARNING: This filter is impossibly slow, and very memory intensive.
-%   If you use too many objects and sensors, then it is likely to exceed 
+%   If you use too many objects and sensors, then it is likely to exceed
 %   Matlab's memory limit and throw an error.
 %
-%   See also generateMultisensorModel, generateMultisensorGroundTruth 
+%   See also generateMultisensorModel, generateMultisensorGroundTruth
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator (for Gibbs sampling).
 %       model - struct. A struct with the fields declared in generateModel.
 %       measurements - cell array. An array containing the measurements for
 %           each time-step of the simulation. See also generateModel.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       stateEstimates - struct. A struct containing the LMB filter's
 %           approximate MAP estimate for each time-step of the simulation, as
 %           well as the objects' trajectories.
@@ -50,7 +52,7 @@ for t = 1:simulationLength
             % Generate the Gibbs sampler matrices, and determine the posterior spatial distributions' parameters
             [L, posteriorParameters] = generateMultisensorLmbmAssociationMatrices(priorHypothesis, measurements(:, t), model);
             % Generate posterior hypotheses using Gibbs sampling
-            A = multisensorLmbmGibbsSampling(L, model.numberOfSamples);
+            [rng, A] = multisensorLmbmGibbsSampling(rng, L, model.numberOfSamples);
             % Determine each posterior hypothesis' parameters
             newHypotheses = determineMultisensorPosteriorHypothesisParameters(A, L, posteriorParameters, priorHypothesis);
             % Add posterior hypotheses to the pile

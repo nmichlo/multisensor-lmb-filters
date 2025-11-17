@@ -1,13 +1,14 @@
-function A = multisensorLmbmGibbsSampling(L, numberOfSamples)
+function [rng, A] = multisensorLmbmGibbsSampling(rng, L, numberOfSamples)
 % MULTISENSORLMBMGIBBSSAMPLING -- Generate association events using a multi-sensor Gibbs sampler.
-%   A = multisensorLmbmGibbsSampling(L, numberOfSamples)
+%   [rng, A] = multisensorLmbmGibbsSampling(rng, L, numberOfSamples)
 %
 %   This function generates a set of posterior hypotheses for a given prior
-%   hypothesis' input matrix using Gibbs sampling. 
+%   hypothesis' input matrix using Gibbs sampling.
 %
 %   See also runMultisensorLmbmFilter, generateMultisensorLmbmAssociationMatrices, generateMultisensorAssociationEvent
 %
 %   Inputs
+%       rng - SimpleRng object. Random number generator.
 %       L - (m1 + 1, m2 + 1, ..., ms + 1, n) array. A log likelihood
 %           matrix used for Gibbs sampling and evaluating the probability
 %           density of an association event.
@@ -15,6 +16,7 @@ function A = multisensorLmbmGibbsSampling(L, numberOfSamples)
 %           generate.
 %
 %   Output
+%       rng - SimpleRng object. Updated random number generator state.
 %       A - array. An array of distinct association events, where each row of the
 %           array is an association event. Each assoication event is a
 %           matrix, but it is flattened here.
@@ -32,7 +34,7 @@ A = zeros(numberOfSamples, n * numberOfSensors);
 %% Gibbs sampling
 for i = 1:numberOfSamples
     %% Generate a new Gibbs sample
-    [V, W] = generateMultisensorAssociationEvent(L, V, W);
+    [rng, V, W] = generateMultisensorAssociationEvent(rng, L, V, W);
     %% Store Gibbs sample
     A(i, :) = reshape(V, 1, n * numberOfSensors);
 end
