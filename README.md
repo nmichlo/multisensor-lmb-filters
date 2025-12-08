@@ -1,3 +1,105 @@
+# 🎯 multisensor-lmb-filters
+
+> MATLAB reference implementation for multi-object tracking using Labeled Multi-Bernoulli filters
+
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
+[![MATLAB](https://img.shields.io/badge/MATLAB-R2022a+-orange.svg)](https://mathworks.com/products/matlab.html)
+[![Octave](https://img.shields.io/badge/Octave-9.0+-blue.svg)](https://octave.org/)
+
+---
+
+## Related Projects
+
+- [**multisensor-lmb-filters-rs**](https://github.com/nmichlo/multisensor-lmb-filters-rs) - Rust port with verified numerical equivalence
+- [**Original repository**](https://github.com/scjrobertson/multisensor-lmb-filters) - Stuart Robertson's original MATLAB implementation (see [LICENSE](LICENSE) for permission details)
+
+## Overview
+
+This is a fork of [scjrobertson/multisensor-lmb-filters](https://github.com/scjrobertson/multisensor-lmb-filters), modified to serve as a **deterministic reference implementation** for cross-language validation.
+
+**Purpose:** Generate reproducible test fixtures for [multisensor-lmb-filters-rs](https://github.com/nmichlo/multisensor-lmb-filters-rs), a Rust port of this library.
+
+## Fork Changes
+
+**Key additions:**
+- Custom PRNG (`SimpleRng`) for cross-language determinism
+- JSON fixture generators for numerical equivalence testing
+- RNG state threading through all stochastic operations
+
+| Addition | Purpose |
+|----------|---------|
+| `SimpleRng` class | XORShift PRNG matching Rust implementation |
+| Fixture generators | JSON test data for numerical equivalence |
+| RNG threading | All functions accept/propagate RNG state |
+| Step-by-step traces | Algorithm internal state capture for debugging |
+
+## Algorithms
+
+### Filters
+
+| Filter | Description |
+|--------|-------------|
+| **LMB** | Fast approximate filter using marginal reweighting |
+| **LMBM** | Exact filter with hypothesis tracking (expensive) |
+
+Both support single-sensor and multi-sensor configurations with linear-Gaussian dynamics.
+
+| Variant | Description |
+|---------|-------------|
+| **PU-LMB** | Parallel Update - best accuracy, assumes independent sensors |
+| **GA-LMB** | Geometric Average - best localization, poor cardinality |
+| **AA-LMB** | Arithmetic Average - balanced approach |
+| **IC-LMB** | Iterated Corrector - sequential sensor processing |
+
+## Quick Start
+
+**Single-sensor:**
+```matlab
+setPath;
+rng = SimpleRng(uint64(42));
+[rng, model] = generateModel(rng, 10, 0.95, 'LBP', 'Fixed');
+[rng, gt, meas, gtRfs] = generateGroundTruth(rng, model);
+[rng, est] = runLmbFilter(rng, model, meas);
+plotResults(model, meas, gt, est, gtRfs);
+```
+
+**Multi-sensor:**
+```matlab
+setPath;
+rng = SimpleRng(uint64(42));
+[rng, model] = generateMultisensorModel(rng, 3, [5 5 5], [0.67 0.70 0.73], [4 3 2], 'PU', 'LBP', 'Fixed');
+[rng, gt, meas, gtRfs] = generateMultisensorGroundTruth(rng, model);
+[rng, est] = runParallelUpdateLmbFilter(rng, model, meas);
+plotMultisensorResults(model, meas, gt, est, gtRfs);
+```
+
+## Repository Structure
+
+```
+multisensor-lmb-filters/
+├── common/              # Shared utilities (SimpleRng, models, metrics)
+├── lmb/                 # Single-sensor LMB filter
+├── lmbm/                # Single-sensor LMBM filter
+├── multisensorLmb/      # Multi-sensor LMB filters (PU/GA/AA/IC)
+├── multisensorLmbm/     # Multi-sensor LMBM filter
+├── trials/              # Benchmarks + fixture generators
+├── fixtures/             # Generated JSON test data
+└── marginalEvaluations/ # Data association comparisons
+```
+
+## Running
+
+### GNU Octave
+
+This fork is compatible with Octave 9.0+ (slower than MATLAB), although
+it requires installation and loading of the `statistics` package before
+code can be run.
+
+---
+
+<details>
+<summary>📜 Original README</summary>
+
 # Multi-sensor labelled multi-Bernoulli filters
 
 This repository contains Matlab implementations of various labelled multi-Bernoulli (LMB) and LMB mixture (LMBM) filters.
@@ -113,6 +215,8 @@ All of the multi-sensor filters' parameters are set in the script **common/gener
 We also have some additional scripts that allow us to compare and contrast both our data association algorithms and filters.
 The scripts are organised into the following two folders:
 
-   1. **marginalEvaluations/:** The scripts in this folder compare the LBP data association's approximate marginal distrubtions to those produced by Murty's algorithm and our Gibbs sampler. 
+   1. **marginalEvaluations/:** The scripts in this folder compare the LBP data association's approximate marginal distrubtions to those produced by Murty's algorithm and our Gibbs sampler.
 The Gibbs sampler is based on the same underlying model as the LBP algorithm.
-   2. **trials/:** The scripts in these folders compare the various single- and multi-sensor filters' OSPA metrics and runtimes in various scenarios. 
+   2. **trials/:** The scripts in these folders compare the various single- and multi-sensor filters' OSPA metrics and runtimes in various scenarios.
+
+</details>
