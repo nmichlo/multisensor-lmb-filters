@@ -48,7 +48,7 @@ function run_benchmarks()
                 t_ms = run_filter(model_base, measurements, method, TIMEOUT_SEC);
                 fprintf('%-22s | %-18s | %9.1f\n', name, filter_name, t_ms);
             catch ME
-                if contains(ME.message, 'Timeout')
+                if ~isempty(strfind(ME.message, 'Timeout'))
                     fprintf('%-22s | %-18s | %9s\n', name, filter_name, 'TIMEOUT');
                 else
                     fprintf('%-22s | %-18s | %9s\n', name, filter_name, 'ERROR');
@@ -66,12 +66,36 @@ function [model, measurements] = preprocess(scenario)
     n_steps = length(scenario.steps);
     measurements = cell(n_steps, 1);
     for t = 1:n_steps
-        readings = scenario.steps(t).sensor_readings{1};
-        if isempty(readings)
-            measurements{t} = [];
+        % Get first sensor's readings (single-sensor benchmark only)
+        % JSON structure: sensor_readings[0] is a list of [x,y] measurements
+        sr = scenario.steps(t).sensor_readings;
+
+        % Handle various JSON parsing formats
+        if iscell(sr)
+            readings_cell = sr{1};  % First sensor
+            if iscell(readings_cell)
+                % Cell array of measurements - convert to matrix
+                n = length(readings_cell);
+                readings_mat = zeros(2, n);
+                for i = 1:n
+                    if iscell(readings_cell{i})
+                        readings_mat(:, i) = [readings_cell{i}{1}; readings_cell{i}{2}];
+                    else
+                        readings_mat(:, i) = readings_cell{i}(:);
+                    end
+                end
+                measurements{t} = readings_mat;
+            elseif ismatrix(readings_cell) && ~isempty(readings_cell)
+                % Already a matrix - transpose to 2 x N
+                measurements{t} = readings_cell(:, 1:2)';
+            else
+                measurements{t} = [];
+            end
+        elseif ismatrix(sr) && ndims(sr) == 3
+            % 3D array: sensors x measurements x coords
+            measurements{t} = squeeze(sr(1, :, :))';  % First sensor, transpose to 2 x N
         else
-            readings_mat = cell2mat(readings');
-            measurements{t} = readings_mat(:, 1:2)';  % 2 x N
+            measurements{t} = [];
         end
     end
 end
