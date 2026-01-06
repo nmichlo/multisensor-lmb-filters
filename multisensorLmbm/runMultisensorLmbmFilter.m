@@ -32,7 +32,18 @@ stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
 %% Run the LMBM filter
+% Check for LMB_SILENT environment variable to suppress progress output
+showProgress = isempty(getenv('LMB_SILENT')) && (simulationLength >= 10);
+if showProgress
+    fprintf(' (%d)', simulationLength);
+    fflush(stdout);
+end
+
 for t = 1:simulationLength
+    if showProgress
+        fprintf(' %d', t);
+        fflush(stdout);
+    end
     %% Add in new trajectory structs
     [model.birthTrajectory.birthTime] = deal(t);
     objects(end+1:end+model.numberOfBirthLocations) = model.birthTrajectory; 
