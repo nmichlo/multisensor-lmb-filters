@@ -16,13 +16,13 @@ model = generateMultisensorModel(numberOfSensors, clutterRates, detectionProbabi
 %% Run filters
 if(strcmp(filterType, 'IC'))
     % Iterated-corrector LMB (IC-LMB) filter
-    stateEstimates = runIcLmbFilter(model, measurements);
+    [stateEstimates, ~] = runIcLmbFilter(model, measurements);
 elseif(strcmp(filterType, 'PU'))
     % Parallel measurement update: PU-, GA-, or AA-LMB filters
-    stateEstimates = runParallelUpdateLmbFilter(model, measurements);
+    [stateEstimates, ~] = runParallelUpdateLmbFilter(model, measurements);
 else
     % Multisensor LMBM filter
-    stateEstimates = runMultisensorLmbmFilter(model, measurements);
+    [~, stateEstimates] = runMultisensorLmbmFilter(model, measurements);
 end
 %% Plotting
 plotMultisensorResults(model, measurements, groundTruth, stateEstimates, groundTruthRfs);
