@@ -1,4 +1,4 @@
-function [rng, stateEstimates] = runLmbFilter(rng, model, measurements)
+function [rng, stateEstimates, executionTimes] = runLmbFilter(rng, model, measurements)
 % RUNLMBFILTER -- Run the LMB filter for a given simulated scenario.
 %   [rng, stateEstimates] = runLmbFilter(rng, model, measurements)
 %
@@ -22,6 +22,7 @@ function [rng, stateEstimates] = runLmbFilter(rng, model, measurements)
 
 %% Initialise variables
 simulationLength = length(measurements);
+executionTimes = zeros(simulationLength, 1);
 % Struct containing objects' Bernoulli parameters and metadata
 objects = model.object;
 % Output struct
@@ -29,6 +30,7 @@ stateEstimates.labels = cell(simulationLength, 1);
 stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
+
 %% Run the LMB filter
 % Check for LMB_SILENT environment variable to suppress progress output
 showProgress = isempty(getenv('LMB_SILENT')) && (simulationLength >= 10);
@@ -43,6 +45,7 @@ for t = 1:simulationLength
         fflush(stdout);
     end
 
+    tic;
     %% Prediction
     objects = lmbPredictionStep(objects, model, t);
     %% Measurement update
@@ -97,7 +100,8 @@ for t = 1:simulationLength
         objects(i).trajectoryLength = j + 1;
         objects(i).trajectory(:, j+1) = objects(i).mu{1};
         objects(i).timestamps(j+1) = t;
-    end 
+    end
+    executionTimes(t) = toc;
 end
 %% Get any long trajectories that weren't extracted
 discardedObjects = objects(([objects.trajectoryLength] > model.minimumTrajectoryLength));

@@ -1,6 +1,6 @@
-function stateEstimates = runParallelUpdateLmbFilter(model, measurements)
+function [stateEstimates, executionTimes] = runParallelUpdateLmbFilter(model, measurements)
 % RUNPARALLELUPDATELMBFILTER -- Run a multi-sensor LMB filter that uses a parallel measurment update.
-%   stateEstimates = runParallelUpdateLmbFilter(model, measurements)
+%   [stateEstimates, executionTimes] = runParallelUpdateLmbFilter(model, measurements)
 %
 %   Run a multi-sensor LMB filter that uses a parallel measurment update.
 %   Measurement update variants include arithmetic average (AA), geometric
@@ -24,6 +24,7 @@ function stateEstimates = runParallelUpdateLmbFilter(model, measurements)
 
 %% Initialise variables
 simulationLength = length(measurements);
+executionTimes = zeros(simulationLength, 1);
 % Struct containing objects' Bernoulli parameters and metadata
 objects = model.object;
 % Output struct
@@ -31,8 +32,10 @@ stateEstimates.labels = cell(simulationLength, 1);
 stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
+
 %% Run the LMB filter
 for t = 1:simulationLength
+    tic;
     %% Prediction
     objects = lmbPredictionStep(objects, model, t);
     %% Measurement update
@@ -98,6 +101,7 @@ for t = 1:simulationLength
         objects(i).trajectory(:, j+1) = objects(i).mu{1};
         objects(i).timestamps(j+1) = t;
     end 
+    executionTimes(t) = toc;
 end
 %% Get any long trajectories that weren't extracted
 discardedObjects = objects(([objects.trajectoryLength] > model.minimumTrajectoryLength));

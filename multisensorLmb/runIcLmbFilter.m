@@ -1,6 +1,6 @@
-function stateEstimates = runIcLmbFilter(model, measurements)
+function [stateEstimates, executionTimes] = runIcLmbFilter(model, measurements)
 % RUNICLMBFILTER -- Run the iterated-corrector LMB (IC-LMB) filter for a given simulated scenario.
-%   stateEstimates = runIcLmbFilter(model, measurements)
+%   [stateEstimates, executionTimes] = runIcLmbFilter(model, measurements)
 %
 %   Determine the objects' state estimates using the IC-LMB filter.
 %
@@ -20,6 +20,7 @@ function stateEstimates = runIcLmbFilter(model, measurements)
 
 %% Initialise variables
 simulationLength = length(measurements);
+executionTimes = zeros(simulationLength, 1);
 % Struct containing objects' Bernoulli parameters and metadata
 objects = model.object;
 % Output struct
@@ -27,8 +28,10 @@ stateEstimates.labels = cell(simulationLength, 1);
 stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
+
 %% Run the LMB filter
 for t = 1:simulationLength
+    tic;
     %% Prediction
     objects = lmbPredictionStep(objects, model, t);
     %% Measurement update
@@ -84,6 +87,7 @@ for t = 1:simulationLength
         objects(i).trajectory(:, j+1) = objects(i).mu{1};
         objects(i).timestamps(j+1) = t;
     end 
+    executionTimes(t) = toc;
 end
 %% Get any long trajectories that weren't extracted
 discardedObjects = objects(([objects.trajectoryLength] > model.minimumTrajectoryLength));

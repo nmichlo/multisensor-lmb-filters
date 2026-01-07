@@ -1,4 +1,4 @@
-function [rng, stateEstimates] = runMultisensorLmbmFilter(rng, model, measurements)
+function [rng, stateEstimates, executionTimes] = runMultisensorLmbmFilter(rng, model, measurements)
 % RUNMULTISENSORLMBMFILTER -- Run the multi-sensor LMBM filter for a given simulated scenario.
 %   [rng, stateEstimates] = runMultisensorLmbmFilter(rng, model, measurements)
 %
@@ -23,6 +23,7 @@ function [rng, stateEstimates] = runMultisensorLmbmFilter(rng, model, measuremen
 
 %% Initialise variables
 simulationLength = length(measurements);
+executionTimes = zeros(simulationLength, 1);
 % Struct containing objects' Bernoulli parameters and metadata
 hypotheses = model.hypotheses;
 objects = model.trajectory;
@@ -31,6 +32,7 @@ stateEstimates.labels = cell(simulationLength, 1);
 stateEstimates.mu = cell(simulationLength, 1);
 stateEstimates.Sigma = cell(simulationLength, 1);
 stateEstimates.objects = objects;
+
 %% Run the LMBM filter
 % Check for LMB_SILENT environment variable to suppress progress output
 showProgress = isempty(getenv('LMB_SILENT')) && (simulationLength >= 10);
@@ -44,6 +46,7 @@ for t = 1:simulationLength
         fprintf(' %d', t);
         fflush(stdout);
     end
+    tic;
     %% Add in new trajectory structs
     [model.birthTrajectory.birthTime] = deal(t);
     objects(end+1:end+model.numberOfBirthLocations) = model.birthTrajectory; 
@@ -101,6 +104,7 @@ for t = 1:simulationLength
         objects(i).trajectory(:, j+1) = hypotheses(1).mu{i};
         objects(i).timestamps(j+1) = t;
     end 
+    executionTimes(t) = toc;
 end
 %% Get any long trajectories that weren't extracted
 discardedObjects = objects(([objects.trajectoryLength] > model.minimumTrajectoryLength));
